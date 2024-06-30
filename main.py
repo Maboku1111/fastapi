@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 import models
 import database
 
+# The lifespan function is used to perform startup and tear down tasks when FastAPI app starts
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # This code will be executed when the application starts up
@@ -13,8 +14,10 @@ async def lifespan(app: FastAPI):
     # This code will be executed when the application shuts down
     database.engine.dispose()
 
+# Create the FastAPI application
 app = FastAPI(lifespan=lifespan)
 
+# Simple, passwordless, not recommended authentication
 @app.middleware("http")
 async def add_session_id(request: Request, call_next):
     session_id = has_session_id = request.cookies.get("my-session-id")
@@ -26,6 +29,7 @@ async def add_session_id(request: Request, call_next):
         response.headers["Set-Cookie"] = f"my-session-id={session_id}; Path=/; HttpOnly"
     return response
 
+# Define CRUD operations
 @app.get("/")
 def root():
     return Response("Server is running")
