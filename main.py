@@ -1,4 +1,5 @@
-from fastapi import Depends, FastAPI, HTTPException, Response
+from uuid import uuid4
+from fastapi import Depends, FastAPI, HTTPException, Response, Request
 from sqlmodel import Session
 from contextlib import asynccontextmanager
 import models
@@ -13,6 +14,17 @@ async def lifespan(app: FastAPI):
     database.engine.dispose()
 
 app = FastAPI(lifespan=lifespan)
+
+@app.middleware("http")
+async def add_session_id(request: Request, call_next):
+    session_id = has_session_id = request.cookies.get("my-session-id")
+    if session_id is None:
+        session_id = str(uuid4())
+    request.cookies.setdefault("my-session-id", session_id)
+    response: Response = await call_next(request)
+    if has_session_id is None:
+        response.headers["Set-Cookie"] = f"my-session-id={session_id}; Path=/; HttpOnly"
+    return response
 
 @app.get("/")
 def root():
